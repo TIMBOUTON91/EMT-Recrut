@@ -5,10 +5,117 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EMT Recrut Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ══════════════════════════════════════════════════════
-//  EMT RECRUT PRO — Script en premier, avant tout HTML
+//  EMT RECRUT PRO — Connecté à Supabase
 // ══════════════════════════════════════════════════════
+
+// ── SUPABASE CONFIG ──
+var SUPA_URL = 'https://hgxemkbqjccrlzprpeec.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneGVta2JxamNjcmx6cHJwZWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxOTYyMDAsImV4cCI6MjA4OTc3MjIwMH0.3RAhX8uXZUYuNfD0tbj8Lp5kmDLZ3Ruvjicci4baCEA';
+var _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+var _companyId = null;
+var _userId = null;
+
+// ── HELPERS SUPABASE ──
+async function sbLoad(){
+  // Charger toutes les données de l'entreprise depuis Supabase
+  try {
+    var [cands, jobs, interviews, members, activity] = await Promise.all([
+      _sb.from('candidates').select('*').order('created_at', {ascending:false}),
+      _sb.from('jobs').select('*').order('created_at', {ascending:false}),
+      _sb.from('interviews').select('*').order('created_at', {ascending:false}),
+      _sb.from('members').select('*'),
+      _sb.from('activity').select('*').order('created_at', {ascending:false}).limit(10)
+    ]);
+    if(cands.data) DB.candidates = cands.data.map(function(c){ return {
+      id:c.id, fn:c.fn, ln:c.ln, email:c.email||'', phone:c.phone||'',
+      loc:c.loc||'France', exp:c.exp||0, score:c.score||70,
+      skills: Array.isArray(c.skills)?c.skills:(c.skills||'').split(',').filter(Boolean),
+      stage:c.stage||'sourcing', job:c.job||'', src:c.src||'Autre',
+      avail:c.avail||'À confirmer', notes:c.notes||'',
+      linkedin:c.linkedin||'', salary:c.salary||'', added:c.added||today()
+    };});
+    if(jobs.data) DB.jobs = jobs.data.map(function(j){ return {
+      id:j.id, title:j.title, dept:j.dept||'Ingénierie', loc:j.loc||'',
+      type:j.type||'CDI', mode:j.mode||'Hybride', smin:j.smin||0, smax:j.smax||0,
+      exp:j.exp||'', skills:j.skills||'', desc:j.description||'',
+      status:j.status||'active', added:j.added||today()
+    };});
+    if(interviews.data) DB.interviews = interviews.data.map(function(i){ return {
+      id:i.id, cand:i.cand, candId:i.cand_id, job:i.job||'',
+      type:i.type||'Entretien RH', date:i.date||'', time:i.time||'',
+      rec:i.rec||'', status:i.status||'planned', link:i.link||'', notes:i.notes||''
+    };});
+    if(members.data) DB.team = members.data.map(function(m){ return {
+      id:m.id, fn:(m.role||'').split(' ')[0]||'Membre', ln:'', role:m.role||'Recruteur',
+      perm:m.perm||'Recruteur', hires:m.hires||0, rating:m.rating||0,
+      email:m.email||'', phone:m.phone||''
+    };});
+    if(activity.data) DB.activity = activity.data.map(function(a){ return {
+      txt:a.txt, time:'Récent', color:a.color||'#1a4fd6'
+    };});
+    renderAll();
+  } catch(e){ console.error('Erreur chargement:', e); }
+}
+
+async function sbSaveCandidate(c){
+  var data = { company_id:_companyId, fn:c.fn, ln:c.ln, email:c.email, phone:c.phone||'',
+    loc:c.loc, exp:c.exp, score:c.score, skills:c.skills, stage:c.stage,
+    job:c.job, src:c.src, avail:c.avail, notes:c.notes, linkedin:c.linkedin||'',
+    salary:c.salary||'', added:c.added };
+  if(typeof c.id === 'number'){ // nouvel id local
+    var r = await _sb.from('candidates').insert(data).select().single();
+    if(r.data) c.id = r.data.id;
+  } else {
+    await _sb.from('candidates').update(data).eq('id', c.id);
+  }
+}
+
+async function sbSaveJob(j){
+  var data = { company_id:_companyId, title:j.title, dept:j.dept, loc:j.loc,
+    type:j.type, mode:j.mode, smin:j.smin, smax:j.smax, exp:j.exp,
+    skills:j.skills, description:j.desc||'', status:j.status, added:j.added };
+  if(typeof j.id === 'number'){
+    var r = await _sb.from('jobs').insert(data).select().single();
+    if(r.data) j.id = r.data.id;
+  } else {
+    await _sb.from('jobs').update(data).eq('id', j.id);
+  }
+}
+
+async function sbSaveInterview(iv){
+  var data = { company_id:_companyId, cand:iv.cand, cand_id:iv.candId||null,
+    job:iv.job, type:iv.type, date:iv.date, time:iv.time, rec:iv.rec,
+    status:iv.status, link:iv.link||'', notes:iv.notes||'' };
+  if(typeof iv.id === 'number'){
+    var r = await _sb.from('interviews').insert(data).select().single();
+    if(r.data) iv.id = r.data.id;
+  } else {
+    await _sb.from('interviews').update(data).eq('id', iv.id);
+  }
+}
+
+async function sbDeleteInterview(id){
+  if(typeof id !== 'number') await _sb.from('interviews').delete().eq('id', id);
+}
+
+async function sbUpdateCandidateStage(id, stage){
+  if(typeof id !== 'number') await _sb.from('candidates').update({stage:stage}).eq('id', id);
+}
+
+async function sbUpdateCandidateScore(id, score){
+  if(typeof id !== 'number') await _sb.from('candidates').update({score:score}).eq('id', id);
+}
+
+async function sbUpdateCandidateNotes(id, notes){
+  if(typeof id !== 'number') await _sb.from('candidates').update({notes:notes}).eq('id', id);
+}
+
+async function sbAddActivity(txt, color){
+  if(_companyId) await _sb.from('activity').insert({company_id:_companyId, txt:txt, color:color||'#1a4fd6'});
+}
 
 // ── BASE DE DONNÉES ──
 var DB = {
@@ -172,12 +279,61 @@ function doLogin(){
   if(!email){ G('l-email').classList.add('err'); return; }
   if(!pwd){ G('l-pwd').classList.add('err'); return; }
   var btn=G('login-btn'); btn.classList.add('ld');
-  setTimeout(function(){ btn.classList.remove('ld'); var raw=email.indexOf('@')>0?email.split('@')[0]:email; DB.user.name=raw.split(/[.\-_]/).map(function(p){ return p.charAt(0).toUpperCase()+p.slice(1); }).join(' '); DB.user.email=email; enterDash(); }, 900);
+  _sb.auth.signInWithPassword({email:email, password:pwd}).then(function(res){
+    btn.classList.remove('ld');
+    if(res.error){
+      G('l-email').classList.add('err'); G('l-pwd').classList.add('err');
+      showToast('Email ou mot de passe incorrect');
+      return;
+    }
+    _userId = res.data.user.id;
+    DB.user.email = email;
+    var raw=email.split('@')[0];
+    DB.user.name=raw.split(/[.\-_]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+    // Charger l'entreprise du user
+    _sb.from('members').select('company_id, companies(name)').eq('user_id', _userId).single().then(function(r){
+      if(r.data){
+        _companyId = r.data.company_id;
+        DB.user.company = r.data.companies ? r.data.companies.name : 'Mon Entreprise';
+      }
+      enterDash();
+      sbLoad();
+    });
+  });
 }
-function quickDemo(){ DB.user.name='Sophie Laurent'; DB.user.email='sophie@emt-corp.fr'; DB.user.company='EMT Corporation'; DB.user.role='Admin'; enterDash(); }
+function quickDemo(){
+  DB.user.name='Sophie Laurent'; DB.user.email='sophie@emt-corp.fr';
+  DB.user.company='EMT Corporation'; DB.user.role='Admin';
+  _companyId = null; // mode démo sans Supabase
+  enterDash();
+  showToast('Mode démo — données non sauvegardées', false);
+}
 function goStep2(){ var fn=G('r-fn').value.trim(),ln=G('r-ln').value.trim(),em=G('r-em').value.trim(),pw=G('r-pw').value,pw2=G('r-pw2').value; var ok=true; if(!fn){G('r-fn').classList.add('err');ok=false;} if(!ln){G('r-ln').classList.add('err');ok=false;} if(!isEmail(em)){G('r-em').classList.add('err');ok=false;} if(pw.length<8){G('r-pw').classList.add('err');ok=false;} if(pw!==pw2){G('r-pw2').classList.add('err');ok=false;} if(ok) showA('ascreen-reg2'); }
 function goStep3(){ var co=G('r-co').value.trim(),se=G('r-sec').value; if(!co){G('r-co').classList.add('err');return;} if(!se){G('r-sec').classList.add('err');return;} DB.user.company=co; showA('ascreen-reg3'); }
-function doRegister(){ var btn=G('finish-btn'); btn.classList.add('ld'); DB.user.name=(G('r-fn').value.trim()+' '+G('r-ln').value.trim()).trim()||'Utilisateur'; DB.user.company=G('r-co').value.trim()||'Mon Entreprise'; DB.user.role=G('r-role').value||'Admin'; setTimeout(function(){ btn.classList.remove('ld'); enterDash(); },1200); }
+function doRegister(){
+  var btn=G('finish-btn'); btn.classList.add('ld');
+  var fn=G('r-fn').value.trim(), ln=G('r-ln').value.trim();
+  var em=G('r-em').value.trim(), pw=G('r-pw').value;
+  var co=G('r-co').value.trim()||'Mon Entreprise';
+  var role=G('r-role').value||'Admin';
+  _sb.auth.signUp({email:em, password:pw, options:{data:{full_name:fn+' '+ln}}}).then(function(res){
+    btn.classList.remove('ld');
+    if(res.error){ showToast('Erreur : '+res.error.message); return; }
+    _userId = res.data.user.id;
+    DB.user.name = fn+' '+ln;
+    DB.user.email = em;
+    DB.user.company = co;
+    DB.user.role = role;
+    // Créer l'entreprise + le membre admin
+    _sb.from('companies').insert({name:co, owner_id:_userId}).select().single().then(function(r){
+      if(r.data){
+        _companyId = r.data.id;
+        _sb.from('members').insert({company_id:_companyId, user_id:_userId, role:role, perm:'Admin'});
+      }
+      enterDash();
+    });
+  });
+}
 function doForgot(){ var em=G('f-em').value.trim(); if(!isEmail(em)){G('f-em').classList.add('err');return;} var btn=G('forgot-btn'); btn.classList.add('ld'); setTimeout(function(){ btn.classList.remove('ld'); G('forgot-form').style.display='none'; G('forgot-ok').classList.add('show'); },900); }
 
 function enterDash(){
@@ -197,7 +353,16 @@ function enterDash(){
   setTimeout(function(){ pushNotif('Bienvenue '+(DB.user.name.split(' ')[0]||'')+'!','Votre tableau de bord est prêt. '+DB.candidates.length+' candidats · '+DB.jobs.filter(function(j){return j.status==='active';}).length+' postes actifs.','👋'); },500);
 }
 
-function logout(){ G('dash-page').classList.remove('active'); G('auth-page').style.display='flex'; showA('ascreen-login'); G('l-email').value=''; G('l-pwd').value=''; }
+function logout(){
+  _sb.auth.signOut();
+  _companyId = null; _userId = null;
+  // Réinitialiser les données
+  DB.candidates=[]; DB.jobs=[]; DB.interviews=[]; DB.team=[]; DB.activity=[];
+  G('dash-page').classList.remove('active');
+  G('auth-page').style.display='flex';
+  showA('ascreen-login');
+  G('l-email').value=''; G('l-pwd').value='';
+}
 
 // ── RENDER ALL ──
 function renderAll(){
@@ -421,6 +586,7 @@ function moveCand(id,newStage){
   var c=DB.candidates.find(function(x){ return x.id===id; }); if(!c) return;
   var old=c.stage; c.stage=newStage;
   addActivity('<strong>'+c.fn+' '+c.ln+'</strong> déplacé → '+STAGES[newStage].label);
+  if(_companyId){ sbUpdateCandidateStage(c.id, newStage); sbAddActivity(c.fn+' '+c.ln+' → '+STAGES[newStage].label,'#1a4fd6'); }
   renderAll(); openDrawer(id);
   showToast(c.fn+' '+c.ln+' → '+STAGES[newStage].label, true);
   pushNotif('Pipeline mis à jour',c.fn+' '+c.ln+' est maintenant en "'+STAGES[newStage].label+'"','⟶');
@@ -430,6 +596,7 @@ function saveNote(){
   if(!_curCandId) return;
   var c=DB.candidates.find(function(x){ return x.id===_curCandId; }); if(!c) return;
   c.notes=G('d-notes').value;
+  if(_companyId) sbUpdateCandidateNotes(c.id, c.notes);
   showToast('Note sauvegardée ✓', true);
 }
 function updateScore(val){
@@ -663,6 +830,8 @@ function addCandidate(){
   renderAll();
   showToast('✓ '+fn+' '+ln+' ajouté ! Score IA : '+score+'%', true);
   pushNotif('Nouveau candidat',fn+' '+ln+' ajouté ('+score+'% de compatibilité).','👤');
+  // Sauvegarder dans Supabase
+  if(_companyId){ var _nc=DB.candidates[DB.candidates.length-1]; sbSaveCandidate(_nc); sbAddActivity('Nouveau candidat : '+fn+' '+ln,'#1a4fd6'); }
   nav('candidates',null);
 }
 
@@ -715,6 +884,8 @@ function addInterview(){
   DB.interviews.push({id:++DB.nextId,cand:cand.fn+' '+cand.ln,candId:candId,job:cand.job,type:G('iv-type').value,date:G('iv-date').value,time:G('iv-time').value,rec:G('iv-rec').value,status:'planned',link:G('iv-link').value||'',notes:G('iv-notes').value||''});
   addActivity('Entretien planifié : <strong>'+cand.fn+' '+cand.ln+'</strong>');
   closeM('m-interview'); renderAll();
+  if(_companyId){ var _ni=DB.interviews[DB.interviews.length-1]; sbSaveInterview(_ni); }
+  if(_companyId){ var _ni2=DB.interviews[DB.interviews.length-1]; sbSaveInterview(_ni2); }
   showToast('✓ Entretien planifié !', true);
   pushNotif('Entretien planifié',cand.fn+' '+cand.ln+' — '+fmtDate(G('iv-date').value)+' à '+G('iv-time').value,'📅');
   nav('calendar',null);
@@ -941,6 +1112,33 @@ function gSearch(val){
 }
 
 window.addEventListener('load', function(){
+  // Vérifier session au démarrage
+  _sb.auth.getSession().then(function(res){
+    if(res.data && res.data.session){
+      var user=res.data.session.user;
+      _userId=user.id; DB.user.email=user.email;
+      var raw=user.email.split('@')[0];
+      DB.user.name=raw.split(/[._-]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+      _sb.from('members').select('company_id, companies(name)').eq('user_id',_userId).single().then(function(r){
+        if(r.data){_companyId=r.data.company_id; DB.user.company=r.data.companies?r.data.companies.name:'Mon Entreprise';}
+        enterDash(); sbLoad();
+      });
+    }
+  });
+  // Vérifier si l'utilisateur est déjà connecté
+  _sb.auth.getSession().then(function(res){
+    if(res.data && res.data.session){
+      var user = res.data.session.user;
+      _userId = user.id;
+      DB.user.email = user.email;
+      var raw=user.email.split('@')[0];
+      DB.user.name=raw.split(/[.\-_]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+      _sb.from('members').select('company_id, companies(name)').eq('user_id', _userId).single().then(function(r){
+        if(r.data){ _companyId=r.data.company_id; DB.user.company=r.data.companies?r.data.companies.name:'Mon Entreprise'; }
+        enterDash(); sbLoad();
+      });
+    }
+  });
   document.querySelectorAll('.overlay').forEach(function(o){ o.addEventListener('click', function(e){ if(e.target===o) o.classList.remove('open'); }); });
   // Setup file drop zone
   var dropzone=G('cv-dropzone');
