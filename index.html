@@ -17,10 +17,13 @@ var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 var _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 var _companyId = null;
 var _userId = null;
+var _isDemoMode = false;
 
 // ── HELPERS SUPABASE ──
 async function sbLoad(){
-  // Charger toutes les données de l'entreprise depuis Supabase
+  if(!_companyId) return; // Mode démo ou pas connecté
+  // Vider d'abord pour éviter les doublons
+  DB.candidates=[]; DB.jobs=[]; DB.team=[]; DB.interviews=[]; DB.activity=[];
   try {
     var [cands, jobs, interviews, members, activity] = await Promise.all([
       _sb.from('candidates').select('*').order('created_at', {ascending:false}),
@@ -304,7 +307,14 @@ function doLogin(){
 function quickDemo(){
   DB.user.name='Sophie Laurent'; DB.user.email='sophie@emt-corp.fr';
   DB.user.company='EMT Corporation'; DB.user.role='Admin';
-  _companyId = null; // mode démo sans Supabase
+  _companyId = null;
+  _isDemoMode = true;
+  // Charger les données démo
+  DB.candidates = JSON.parse(JSON.stringify(DB._demo.candidates));
+  DB.jobs       = JSON.parse(JSON.stringify(DB._demo.jobs));
+  DB.team       = JSON.parse(JSON.stringify(DB._demo.team));
+  DB.interviews = JSON.parse(JSON.stringify(DB._demo.interviews));
+  DB.activity   = JSON.parse(JSON.stringify(DB._demo.activity));
   enterDash();
   showToast('Mode démo — données non sauvegardées', false);
 }
@@ -343,19 +353,24 @@ function enterDash(){
   G('sb-av-init').textContent=init;
   G('sb-uname').textContent=DB.user.name;
   G('sb-urole').textContent=DB.user.company+' · '+DB.user.role;
-  G('set-company').value=DB.user.company;
-  // Request notification permission
+  var sc=G('set-company'); if(sc) sc.value=DB.user.company;
   if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission(); }
   initChat();
   renderAll();
-  nav('dashboard', document.querySelector('.sb-item.active'));
-  // Welcome notification
-  setTimeout(function(){ pushNotif('Bienvenue '+(DB.user.name.split(' ')[0]||'')+'!','Votre tableau de bord est prêt. '+DB.candidates.length+' candidats · '+DB.jobs.filter(function(j){return j.status==='active';}).length+' postes actifs.','👋'); },500);
+  nav('dashboard', document.querySelector('.sb-item'));
+  // Notif de bienvenue seulement après chargement des données
+  setTimeout(function(){
+    pushNotif('Bienvenue '+(DB.user.name.split(' ')[0]||'')+'!',
+      DB.candidates.length > 0
+        ? DB.candidates.length+' candidats · '+DB.jobs.filter(function(j){return j.status==='active';}).length+' postes actifs.'
+        : 'Votre espace est prêt. Commencez par créer une offre d'emploi.',
+      '👋');
+  }, 1000);
 }
 
 function logout(){
   _sb.auth.signOut();
-  _companyId = null; _userId = null;
+  _companyId = null; _userId = null; _isDemoMode = false;
   // Réinitialiser les données
   DB.candidates=[]; DB.jobs=[]; DB.interviews=[]; DB.team=[]; DB.activity=[];
   G('dash-page').classList.remove('active');
@@ -1112,7 +1127,33 @@ function gSearch(val){
 }
 
 window.addEventListener('load', function(){
-  // Vérifier session au démarrage
+  // Écouter les changements d'état de session Supabase
+  _sb.auth.onAuthStateChange(function(event, session){
+    if(event === 'SIGNED_IN' && session && !_isDemoMode && !G('dash-page').classList.contains('active')){
+      _userId = session.user.id;
+      DB.user.email = session.user.email;
+      var raw = session.user.email.split('@')[0];
+      DB.user.name = raw.split(/[._-]/).map(function(p){ return p.charAt(0).toUpperCase()+p.slice(1); }).join(' ');
+      _sb.from('members').select('company_id, companies(name, sector)').eq('user_id', _userId).single().then(function(r){
+        if(r.data){
+          _companyId = r.data.company_id;
+          DB.user.company = r.data.companies ? r.data.companies.name : 'Mon Entreprise';
+        }
+        // Vider les données démo avant de charger les vraies
+        DB.candidates=[]; DB.jobs=[]; DB.team=[]; DB.interviews=[]; DB.activity=[];
+        enterDash();
+        sbLoad();
+      });
+    }
+    if(event === 'SIGNED_OUT'){
+      // Ne pas déconnecter en mode démo
+      if(!_isDemoMode && G('dash-page').classList.contains('active')){
+        logout();
+      }
+    }
+  });
+
+  // Vérifier la session existante au démarrage
   _sb.auth.getSession().then(function(res){
     if(res.data && res.data.session){
       var user=res.data.session.user;
