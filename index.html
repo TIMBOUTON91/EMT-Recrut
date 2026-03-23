@@ -623,6 +623,7 @@ function publishJob(){
     pushNotif('Nouvelle offre','"'+title+'" est maintenant en ligne.','📝');
     showToast('"'+title+'" publié !', true);
   }
+  if(_companyId){ var _nj=DB.jobs[DB.jobs.length-1]; sbSaveJob(_nj); }
   closeM('m-job'); _editJobId=null; renderAll(); nav('jobs',null);
 }
 
