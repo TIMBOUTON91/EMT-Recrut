@@ -123,56 +123,11 @@ var DB = {
   user: { name:'Utilisateur', company:'Mon Entreprise', role:'Admin', email:'', phone:'', notifSound:true, notifDesktop:true, notifEmail:true, lang:'fr', theme:'light' },
   nextId: 100,
   notifications: [],
-  candidates: [
-    {id:1,fn:'Marie',ln:'Dubois',email:'marie@gmail.com',phone:'06 12 34 56 78',loc:'Paris',exp:7,score:94,skills:['React','TypeScript','Next.js','GraphQL'],stage:'screening',job:'Lead Frontend Developer',src:'LinkedIn',avail:'Disponible immédiatement',added:'14/03/2026',notes:'Profil exceptionnel, contacter en priorité.',linkedin:'linkedin.com/in/mariedubois',salary:'60000'},
-    {id:2,fn:'Amina',ln:'Khoury',email:'a.khoury@mail.com',phone:'06 98 76 54 32',loc:'Lyon',exp:5,score:91,skills:['Python','SQL','Tableau','Power BI'],stage:'offer',job:'Data Analyst Senior',src:'Indeed',avail:'Disponible',added:'10/03/2026',notes:'',linkedin:'',salary:'48000'},
-    {id:3,fn:'Lucas',ln:'Martin',email:'lmartin@dev.io',phone:'07 11 22 33 44',loc:'Bordeaux',exp:6,score:88,skills:['Node.js','PostgreSQL','Docker','Kubernetes'],stage:'interview',job:'Backend Senior',src:'LinkedIn',avail:'Préavis 1 mois',added:'12/03/2026',notes:'Entretien très positif.',linkedin:'',salary:'62000'},
-    {id:4,fn:'Thomas',ln:'Bernard',email:'t.bernard@pro.fr',phone:'06 55 44 33 22',loc:'Paris',exp:4,score:87,skills:['Agile','Figma','SaaS','OKR'],stage:'interview',job:'Product Manager',src:'Recommandation',avail:'Préavis 3 mois',added:'08/03/2026',notes:'',linkedin:'',salary:'55000'},
-    {id:5,fn:'Chloé',ln:'Petit',email:'chloe@design.fr',phone:'07 66 77 88 99',loc:'Nantes',exp:3,score:72,skills:['Figma','Prototypage','Sketch'],stage:'sourcing',job:'UX Designer',src:'Portfolio',avail:'Disponible',added:'16/03/2026',notes:'',linkedin:'',salary:'42000'},
-    {id:6,fn:'Hugo',ln:'Blanc',email:'h.blanc@pm.fr',phone:'06 33 44 55 66',loc:'Paris',exp:5,score:81,skills:['SaaS B2B','OKR','Roadmap'],stage:'screening',job:'Product Manager',src:'LinkedIn',avail:'Préavis 1 mois',added:'13/03/2026',notes:'',linkedin:'',salary:'52000'},
-    {id:7,fn:'Sara',ln:'Morel',email:'sara@dev.fr',phone:'07 22 11 00 99',loc:'Bordeaux',exp:5,score:83,skills:['Java','Spring','AWS','Microservices'],stage:'screening',job:'Backend Senior',src:'Indeed',avail:'Disponible',added:'11/03/2026',notes:'',linkedin:'',salary:'58000'},
-    {id:8,fn:'Nina',ln:'Jobert',email:'nina@data.fr',phone:'06 44 55 66 77',loc:'Paris',exp:3,score:75,skills:['Python','SQL','Power BI'],stage:'sourcing',job:'Data Analyst Senior',src:'Indeed',avail:'Disponible',added:'15/03/2026',notes:'',linkedin:'',salary:'40000'},
-  ],
-  jobs: [
-    {id:1,title:'Lead Frontend Developer',dept:'Ingénierie',loc:'Paris',type:'CDI',mode:'Hybride',smin:55000,smax:70000,skills:'React, TypeScript, Next.js',desc:'Rejoignez notre équipe frontend pour piloter le développement de nos produits web. Vous architecturerez et développerez des interfaces modernes, performantes et accessibles.',exp:'Senior (5+ ans)',status:'active',added:'15/03/2026'},
-    {id:2,title:'Data Analyst Senior',dept:'Data',loc:'Lyon',type:'CDI',mode:'Hybride',smin:42000,smax:52000,skills:'Python, SQL, Tableau',desc:'Analysez nos données pour en extraire des insights stratégiques. Vous construirez des dashboards et accompagnerez les équipes dans leurs décisions data-driven.',exp:'Confirmé (2–5 ans)',status:'active',added:'11/03/2026'},
-    {id:3,title:'Product Manager',dept:'Produit',loc:'Paris',type:'CDI',mode:'Présentiel',smin:50000,smax:65000,skills:'Agile, Figma, SaaS',desc:'Définissez et pilotez la roadmap produit en collaboration avec les équipes design, engineering et business. Vous serez le garant de la vision produit.',exp:'Confirmé (2–5 ans)',status:'active',added:'13/03/2026'},
-    {id:4,title:'Backend Senior',dept:'Ingénierie',loc:'Remote',type:'CDI',mode:'Full remote',smin:55000,smax:68000,skills:'Node.js, PostgreSQL, Docker',desc:'Concevez et développez nos APIs et microservices. Vous contribuerez à l\'architecture technique et au scaling de notre plateforme.',exp:'Senior (5+ ans)',status:'active',added:'16/03/2026'},
-    {id:5,title:'DevOps Engineer',dept:'Infra',loc:'Paris',type:'CDI',mode:'Hybride',smin:55000,smax:75000,skills:'Docker, K8s, Terraform',desc:'Automatisez et sécurisez notre infrastructure cloud. Vous mettrez en place les pipelines CI/CD et garantirez la haute disponibilité de nos services.',exp:'Senior (5+ ans)',status:'active',added:'17/03/2026'},
-    {id:6,title:'UX Designer',dept:'Design',loc:'Nantes',type:'CDI',mode:'Hybride',smin:40000,smax:50000,skills:'Figma, Prototypage',desc:'Créez des expériences utilisateur intuitives et engageantes. Vous mènerez des recherches utilisateurs et traduirez les insights en solutions design.',exp:'Confirmé (2–5 ans)',status:'active',added:'08/03/2026'},
-    {id:7,title:'Head of Engineering',dept:'Direction',loc:'Paris',type:'CDI',mode:'Présentiel',smin:85000,smax:110000,skills:'Leadership, Architecture, Agile',desc:'',exp:'Expert / Lead (8+ ans)',status:'draft',added:'17/03/2026'},
-  ],
-  team: [
-    {id:1,fn:'Sophie',ln:'Laurent',role:'Directrice RH',perm:'Admin',hires:47,rating:4.8,email:'s.laurent@emt.fr',phone:'06 10 20 30 40'},
-    {id:2,fn:'Marc',ln:'Dupont',role:'Resp. Recrutement',perm:'Recruteur',hires:32,rating:4.6,email:'m.dupont@emt.fr',phone:'06 20 30 40 50'},
-    {id:3,fn:'Julie',ln:'Renard',role:'Chargée RH',perm:'Recruteur',hires:18,rating:4.7,email:'j.renard@emt.fr',phone:'06 30 40 50 60'},
-    {id:4,fn:'Paul',ln:'Besson',role:'Sourceur Senior',perm:'Sourceur',hires:5,rating:4.4,email:'p.besson@emt.fr',phone:'06 40 50 60 70'},
-  ],
-  interviews: [
-    {id:1,cand:'Marie Dubois',candId:1,job:'Lead Frontend Developer',type:'Entretien RH',date:'2026-03-18',time:'09:00',rec:'Sophie Laurent',status:'confirmed',link:'https://meet.google.com/abc-def-ghi',notes:'Préparer les questions sur l\'expérience en lead.'},
-    {id:2,cand:'Hugo Blanc',candId:6,job:'Product Manager',type:'Pré-qualification',date:'2026-03-18',time:'14:30',rec:'Marc Dupont',status:'pending',link:'',notes:''},
-    {id:3,cand:'Lucas Martin',candId:3,job:'Backend Senior',type:'Entretien final',date:'2026-03-19',time:'09:00',rec:'Julie Renard',status:'confirmed',link:'https://teams.microsoft.com/xyz',notes:'Présenter l\'architecture technique.'},
-    {id:4,cand:'Thomas Bernard',candId:4,job:'Product Manager',type:'Test technique',date:'2026-03-20',time:'10:00',rec:'Marc Dupont',status:'done',link:'',notes:'Résultat : 87/100. Très bon.'},
-    {id:5,cand:'Chloé Petit',candId:5,job:'UX Designer',type:'Découverte',date:'2026-03-21',time:'15:00',rec:'Sophie Laurent',status:'planned',link:'',notes:''},
-  ],
-  integrations: {
-    linkedin:   {name:'LinkedIn Recruiter', url:'https://linkedin.com/recruiter',   key:'',  connected:true,  icon:'💼',color:'#e8f4fd'},
-    indeed:     {name:'Indeed',             url:'https://employer.indeed.com',      key:'',  connected:true,  icon:'🔍',color:'#fff3e0'},
-    wttj:       {name:'Welcome to the Jungle',url:'https://wttj.co',              key:'',  connected:true,  icon:'🌐',color:'#f3e8ff'},
-    gcal:       {name:'Google Calendar',    url:'https://calendar.google.com',     key:'',  connected:true,  icon:'📅',color:'#e8f5e9'},
-    slack:      {name:'Slack',              url:'',                                key:'',  connected:true,  icon:'💬',color:'#e3f2fd'},
-    teams:      {name:'Microsoft Teams',    url:'',                                key:'',  connected:true,  icon:'🟦',color:'#e8eaf6'},
-    workday:    {name:'Workday HRIS',       url:'',                                key:'',  connected:false, icon:'🏢',color:'#f9fafb'},
-    apec:       {name:'APEC',               url:'https://apec.fr',                 key:'',  connected:false, icon:'🎓',color:'#fce4ec'},
-    zoom:       {name:'Zoom',               url:'',                                key:'',  connected:false, icon:'📹',color:'#e3f2fd'},
-    stripe:     {name:'Stripe (facturation)',url:'',                               key:'',  connected:false, icon:'💳',color:'#f3e8ff'},
-  },
-  activity: [
-    {txt:'<strong>Amina Khoury</strong> a accepté l\'offre Data Analyst',time:'12 min',color:'#1a7a4a'},
-    {txt:'Entretien planifié avec <strong>Lucas Martin</strong>',time:'1h',color:'#1a4fd6'},
-    {txt:'5 CVs importés et analysés pour <strong>Lead Frontend</strong>',time:'2h',color:'#b85c00'},
-    {txt:'<strong>Chloé Petit</strong> a postulé à UX Designer',time:'3h',color:'#5b21b6'},
-  ]
+  candidates: [],
+  jobs: [],
+  team: [],
+  interviews: [],
+  activity: []
 };
 
 var STAGES = {
@@ -303,57 +258,6 @@ function doLogin(){
   });
 }
 // ── DONNÉES DÉMO ──
-var DEMO_DATA = {
-  candidates:[
-    {id:1,fn:'Marie',ln:'Dubois',email:'marie@gmail.com',phone:'06 12 34 56 78',loc:'Paris',exp:7,score:94,skills:['React','TypeScript','Next.js','GraphQL'],stage:'screening',job:'Lead Frontend Developer',src:'LinkedIn',avail:'Disponible immédiatement',added:'14/03/2026',notes:'Profil exceptionnel.',linkedin:'',salary:'60000'},
-    {id:2,fn:'Amina',ln:'Khoury',email:'a.khoury@mail.com',phone:'06 98 76 54 32',loc:'Lyon',exp:5,score:91,skills:['Python','SQL','Tableau','Power BI'],stage:'offer',job:'Data Analyst Senior',src:'Indeed',avail:'Disponible',added:'10/03/2026',notes:'',linkedin:'',salary:'48000'},
-    {id:3,fn:'Lucas',ln:'Martin',email:'lmartin@dev.io',phone:'07 11 22 33 44',loc:'Bordeaux',exp:6,score:88,skills:['Node.js','PostgreSQL','Docker','Kubernetes'],stage:'interview',job:'Backend Senior',src:'LinkedIn',avail:'Préavis 1 mois',added:'12/03/2026',notes:'',linkedin:'',salary:'62000'},
-    {id:4,fn:'Thomas',ln:'Bernard',email:'t.bernard@pro.fr',phone:'',loc:'Paris',exp:4,score:87,skills:['Agile','Figma','SaaS','OKR'],stage:'interview',job:'Product Manager',src:'Recommandation',avail:'Préavis 3 mois',added:'08/03/2026',notes:'',linkedin:'',salary:'55000'},
-    {id:5,fn:'Chloé',ln:'Petit',email:'chloe@design.fr',phone:'',loc:'Nantes',exp:3,score:72,skills:['Figma','Prototypage','Sketch'],stage:'sourcing',job:'UX Designer',src:'Portfolio',avail:'Disponible',added:'16/03/2026',notes:'',linkedin:'',salary:'42000'},
-    {id:6,fn:'Hugo',ln:'Blanc',email:'h.blanc@pm.fr',phone:'',loc:'Paris',exp:5,score:81,skills:['SaaS B2B','OKR','Roadmap'],stage:'screening',job:'Product Manager',src:'LinkedIn',avail:'Préavis 1 mois',added:'13/03/2026',notes:'',linkedin:'',salary:'52000'},
-    {id:7,fn:'Sara',ln:'Morel',email:'sara@dev.fr',phone:'',loc:'Bordeaux',exp:5,score:83,skills:['Java','Spring','AWS','Microservices'],stage:'screening',job:'Backend Senior',src:'Indeed',avail:'Disponible',added:'11/03/2026',notes:'',linkedin:'',salary:'58000'},
-    {id:8,fn:'Nina',ln:'Jobert',email:'nina@data.fr',phone:'',loc:'Paris',exp:3,score:75,skills:['Python','SQL','Power BI'],stage:'sourcing',job:'Data Analyst Senior',src:'Indeed',avail:'Disponible',added:'15/03/2026',notes:'',linkedin:'',salary:'40000'},
-  ],
-  jobs:[
-    {id:1,title:'Lead Frontend Developer',dept:'Ingénierie',loc:'Paris',type:'CDI',mode:'Hybride',smin:55000,smax:70000,skills:'React, TypeScript, Next.js',desc:'Rejoignez notre équipe frontend pour piloter le développement de nos produits web.',exp:'Senior (5+ ans)',status:'active',added:'15/03/2026'},
-    {id:2,title:'Data Analyst Senior',dept:'Data',loc:'Lyon',type:'CDI',mode:'Hybride',smin:42000,smax:52000,skills:'Python, SQL, Tableau',desc:'Analysez nos données pour en extraire des insights stratégiques.',exp:'Confirmé (2–5 ans)',status:'active',added:'11/03/2026'},
-    {id:3,title:'Product Manager',dept:'Produit',loc:'Paris',type:'CDI',mode:'Présentiel',smin:50000,smax:65000,skills:'Agile, Figma, SaaS',desc:'Définissez et pilotez la roadmap produit.',exp:'Confirmé (2–5 ans)',status:'active',added:'13/03/2026'},
-    {id:4,title:'Backend Senior',dept:'Ingénierie',loc:'Remote',type:'CDI',mode:'Full remote',smin:55000,smax:68000,skills:'Node.js, PostgreSQL, Docker',desc:'Concevez et développez nos APIs.',exp:'Senior (5+ ans)',status:'active',added:'16/03/2026'},
-    {id:5,title:'DevOps Engineer',dept:'Infra',loc:'Paris',type:'CDI',mode:'Hybride',smin:55000,smax:75000,skills:'Docker, K8s, Terraform',desc:'Automatisez notre infrastructure cloud.',exp:'Senior (5+ ans)',status:'active',added:'17/03/2026'},
-    {id:6,title:'UX Designer',dept:'Design',loc:'Nantes',type:'CDI',mode:'Hybride',smin:40000,smax:50000,skills:'Figma, Prototypage',desc:'Créez des expériences utilisateur intuitives.',exp:'Confirmé (2–5 ans)',status:'active',added:'08/03/2026'},
-  ],
-  team:[
-    {id:1,fn:'Sophie',ln:'Laurent',role:'Directrice RH',perm:'Admin',hires:47,rating:4.8,email:'s.laurent@emt.fr',phone:'06 10 20 30 40'},
-    {id:2,fn:'Marc',ln:'Dupont',role:'Resp. Recrutement',perm:'Recruteur',hires:32,rating:4.6,email:'m.dupont@emt.fr',phone:'06 20 30 40 50'},
-    {id:3,fn:'Julie',ln:'Renard',role:'Chargée RH',perm:'Recruteur',hires:18,rating:4.7,email:'j.renard@emt.fr',phone:'06 30 40 50 60'},
-    {id:4,fn:'Paul',ln:'Besson',role:'Sourceur Senior',perm:'Sourceur',hires:5,rating:4.4,email:'p.besson@emt.fr',phone:'06 40 50 60 70'},
-  ],
-  interviews:[
-    {id:1,cand:'Marie Dubois',candId:1,job:'Lead Frontend Developer',type:'Entretien RH',date:'2026-03-25',time:'09:00',rec:'Sophie Laurent',status:'confirmed',link:'',notes:''},
-    {id:2,cand:'Lucas Martin',candId:3,job:'Backend Senior',type:'Entretien final',date:'2026-03-26',time:'14:00',rec:'Marc Dupont',status:'planned',link:'',notes:''},
-    {id:3,cand:'Thomas Bernard',candId:4,job:'Product Manager',type:'Test technique',date:'2026-03-27',time:'10:00',rec:'Julie Renard',status:'planned',link:'',notes:''},
-  ],
-  activity:[
-    {txt:'<strong>Amina Khoury</strong> a accepté l\'offre Data Analyst',time:'12 min',color:'#1a7a4a'},
-    {txt:'Entretien planifié avec <strong>Lucas Martin</strong>',time:'1h',color:'#1a4fd6'},
-    {txt:'5 CVs importés pour <strong>Lead Frontend</strong>',time:'2h',color:'#b85c00'},
-    {txt:'<strong>Chloé Petit</strong> a postulé à UX Designer',time:'3h',color:'#5b21b6'},
-  ]
-};
-
-function quickDemo(){
-  _companyId = null; _userId = null;
-  DB.user.name='Sophie Laurent'; DB.user.email='sophie@emt-corp.fr';
-  DB.user.company='EMT Corporation'; DB.user.role='Admin';
-  // Charger les données démo
-  DB.candidates  = JSON.parse(JSON.stringify(DEMO_DATA.candidates));
-  DB.jobs        = JSON.parse(JSON.stringify(DEMO_DATA.jobs));
-  DB.team        = JSON.parse(JSON.stringify(DEMO_DATA.team));
-  DB.interviews  = JSON.parse(JSON.stringify(DEMO_DATA.interviews));
-  DB.activity    = JSON.parse(JSON.stringify(DEMO_DATA.activity));
-  enterDash();
-  showToast('Mode démo — données non sauvegardées', false);
-}
 function goStep2(){ var fn=G('r-fn').value.trim(),ln=G('r-ln').value.trim(),em=G('r-em').value.trim(),pw=G('r-pw').value,pw2=G('r-pw2').value; var ok=true; if(!fn){G('r-fn').classList.add('err');ok=false;} if(!ln){G('r-ln').classList.add('err');ok=false;} if(!isEmail(em)){G('r-em').classList.add('err');ok=false;} if(pw.length<8){G('r-pw').classList.add('err');ok=false;} if(pw!==pw2){G('r-pw2').classList.add('err');ok=false;} if(ok) showA('ascreen-reg2'); }
 function goStep3(){ var co=G('r-co').value.trim(),se=G('r-sec').value; if(!co){G('r-co').classList.add('err');return;} if(!se){G('r-sec').classList.add('err');return;} DB.user.company=co; showA('ascreen-reg3'); }
 function doRegister(){
@@ -1210,6 +1114,44 @@ window.addEventListener('load', function(){
   // ── Initialiser Supabase (SDK chargé) ──
   _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
+  // ── Détecter token d'invitation dans l'URL ──
+  // Quand quelqu'un clique sur le lien d'invitation Supabase
+  var hash = window.location.hash;
+  if(hash && hash.indexOf('access_token') >= 0){
+    // Extraire les paramètres du hash
+    var params = {};
+    hash.replace('#','').split('&').forEach(function(p){
+      var kv = p.split('='); params[kv[0]] = decodeURIComponent(kv[1]||'');
+    });
+    if(params.access_token){
+      // Connecter l'utilisateur avec le token
+      _sb.auth.setSession({access_token: params.access_token, refresh_token: params.refresh_token||''})
+      .then(function(res){
+        if(res.data && res.data.session){
+          var user = res.data.session.user;
+          _userId = user.id;
+          DB.user.email = user.email;
+          var raw = user.email.split('@')[0];
+          DB.user.name = raw.split(/[._-]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+          // Nettoyer l'URL
+          window.history.replaceState(null, '', window.location.pathname);
+          // Chercher l'entreprise
+          _sb.from('members').select('company_id, companies(name)').eq('user_id',_userId).single()
+          .then(function(r){
+            if(r.data && r.data.company_id){
+              _companyId = r.data.company_id;
+              DB.user.company = r.data.companies ? r.data.companies.name : 'Mon Entreprise';
+            }
+            DB.candidates=[]; DB.jobs=[]; DB.team=[]; DB.interviews=[]; DB.activity=[];
+            enterDash();
+            if(_companyId) sbLoad();
+          }).catch(function(){ enterDash(); });
+        }
+      }).catch(function(e){ console.warn('Token error:', e); });
+      return; // Ne pas continuer avec getSession
+    }
+  }
+
   // ── Fermeture modales au clic extérieur ──
   document.querySelectorAll('.overlay').forEach(function(o){
     o.addEventListener('click', function(e){ if(e.target===o) o.classList.remove('open'); });
@@ -1276,8 +1218,8 @@ window.addEventListener('load', function(){
 .abtn-p{background:var(--accent);color:#fff;}.abtn-p:hover{background:var(--accent-h);}.abtn-o{background:transparent;color:var(--ink2);border:1.5px solid var(--border);}.abtn-o:hover{background:var(--bg);}.abtn-sso{background:var(--surface);border:1.5px solid var(--border);color:var(--ink2);font-size:13px;margin-bottom:7px;}.abtn-sso:hover{background:var(--bg);}
 .abtn.ld{pointer-events:none;opacity:.8;}.spin{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}.ld .spin{display:block;}.ld .btxt{display:none;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.demo-btn{width:100%;padding:11px 18px;border-radius:8px;font-size:13.5px;font-family:'Instrument Sans',sans-serif;font-weight:700;cursor:pointer;border:2px solid #86efac;background:#f0fdf4;color:#166534;margin-top:8px;transition:all .15s;}.demo-btn:hover{background:#dcfce7;}
-.demo-hint{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-top:10px;line-height:1.5;}
+
+
 .steps{display:flex;align-items:center;margin-bottom:22px;}.si{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink3);flex:1;}.si.active{color:var(--accent);}.si.done{color:var(--green);}.snum{width:23px;height:23px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;flex-shrink:0;}.si.active .snum{border-color:var(--accent);color:var(--accent);}.si.done .snum{background:var(--green);border-color:var(--green);color:#fff;}.sline{flex:1;height:2px;background:var(--border);margin:0 5px;}.sline.done{background:var(--green);}
 .rg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}.rcard{border:2px solid var(--border);border-radius:9px;padding:11px;cursor:pointer;transition:all .15s;text-align:center;}.rcard:hover{border-color:var(--accent);}.rcard.sel{border-color:var(--accent);background:var(--accent-light);}.rc-ico{font-size:19px;margin-bottom:4px;}.rc-nm{font-size:12px;font-weight:600;margin-bottom:1px;}.rc-sub{font-size:10px;color:var(--ink3);}
 .inv-row{display:flex;gap:6px;margin-bottom:7px;}.add-inv{background:none;border:1.5px dashed var(--border);border-radius:8px;padding:7px;width:100%;font-size:13px;color:var(--ink3);cursor:pointer;font-family:'Instrument Sans',sans-serif;font-weight:500;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:5px;margin-top:3px;}.add-inv:hover{border-color:var(--accent);color:var(--accent);}
@@ -1370,14 +1312,14 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
       <div class="ascreen active" id="ascreen-login">
         <div class="atitle">Bon retour 👋</div>
         <div class="asub">Connectez-vous à votre espace EMT Recrut</div>
-        <div class="fg"><div class="fl">Email</div><div class="iw"><span class="ii">✉️</span><input type="text" class="fc" id="l-email" placeholder="ex: demo@emt.fr"/></div></div>
+        <div class="fg"><div class="fl">Email</div><div class="iw"><span class="ii">✉️</span><input type="text" class="fc" id="l-email" placeholder="vous@entreprise.fr"/></div></div>
         <div class="fg"><div class="fl">Mot de passe <a onclick="showA('ascreen-forgot')">Oublié ?</a></div><div class="iw"><span class="ii">🔒</span><input type="password" class="fc" id="l-pwd" placeholder="••••••••"/><button type="button" class="pt" onclick="togglePwd('l-pwd',this)">👁</button></div></div>
         <button type="button" class="abtn abtn-p" id="login-btn" onclick="doLogin()"><div class="spin"></div><span class="btxt">Se connecter</span></button>
-        <button type="button" class="demo-btn" onclick="quickDemo()">⚡ Accès démo instantané</button>
-        <div class="demo-hint"><strong>Mode démo :</strong> cliquez le bouton vert pour entrer directement, ou tapez n'importe quel email + mot de passe.</div>
-        <div class="adiv">ou</div>
-        <button type="button" class="abtn abtn-sso" onclick="showToast('Configurer OAuth dans Supabase')">🔵 Google</button>
-        <button type="button" class="abtn abtn-sso" onclick="showToast('Configurer OAuth dans Supabase')">🟦 Microsoft</button>
+        
+        
+        
+        
+        
         <div class="sl">Pas de compte ? <a onclick="showA('ascreen-reg1')">Créer un espace entreprise</a></div>
       </div>
       <!-- REG STEP 1 -->
