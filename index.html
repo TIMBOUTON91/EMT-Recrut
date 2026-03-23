@@ -14,20 +14,21 @@
 // ── SUPABASE CONFIG ──
 var SUPA_URL = 'https://hgxemkbqjccrlzprpeec.supabase.co';
 var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneGVta2JxamNjcmx6cHJwZWVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxOTYyMDAsImV4cCI6MjA4OTc3MjIwMH0.3RAhX8uXZUYuNfD0tbj8Lp5kmDLZ3Ruvjicci4baCEA';
-var _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+var _sb = null; // initialisé dans window.load après chargement du SDK
 var _companyId = null;
 var _userId = null;
 
 // ── HELPERS SUPABASE ──
 async function sbLoad(){
-  // Charger toutes les données de l'entreprise depuis Supabase
+  if(!_companyId) return; // Pas de company = mode démo ou non connecté
+  DB.candidates=[]; DB.jobs=[]; DB.team=[]; DB.interviews=[]; DB.activity=[];
   try {
     var [cands, jobs, interviews, members, activity] = await Promise.all([
-      _sb.from('candidates').select('*').order('created_at', {ascending:false}),
-      _sb.from('jobs').select('*').order('created_at', {ascending:false}),
-      _sb.from('interviews').select('*').order('created_at', {ascending:false}),
-      _sb.from('members').select('*'),
-      _sb.from('activity').select('*').order('created_at', {ascending:false}).limit(10)
+      _sb.from('candidates').select('*').eq('company_id',_companyId).order('created_at', {ascending:false}),
+      _sb.from('jobs').select('*').eq('company_id',_companyId).order('created_at', {ascending:false}),
+      _sb.from('interviews').select('*').eq('company_id',_companyId).order('created_at', {ascending:false}),
+      _sb.from('members').select('*').eq('company_id',_companyId),
+      _sb.from('activity').select('*').eq('company_id',_companyId).order('created_at', {ascending:false}).limit(10)
     ]);
     if(cands.data) DB.candidates = cands.data.map(function(c){ return {
       id:c.id, fn:c.fn, ln:c.ln, email:c.email||'', phone:c.phone||'',
@@ -301,10 +302,55 @@ function doLogin(){
     });
   });
 }
+// ── DONNÉES DÉMO ──
+var DEMO_DATA = {
+  candidates:[
+    {id:1,fn:'Marie',ln:'Dubois',email:'marie@gmail.com',phone:'06 12 34 56 78',loc:'Paris',exp:7,score:94,skills:['React','TypeScript','Next.js','GraphQL'],stage:'screening',job:'Lead Frontend Developer',src:'LinkedIn',avail:'Disponible immédiatement',added:'14/03/2026',notes:'Profil exceptionnel.',linkedin:'',salary:'60000'},
+    {id:2,fn:'Amina',ln:'Khoury',email:'a.khoury@mail.com',phone:'06 98 76 54 32',loc:'Lyon',exp:5,score:91,skills:['Python','SQL','Tableau','Power BI'],stage:'offer',job:'Data Analyst Senior',src:'Indeed',avail:'Disponible',added:'10/03/2026',notes:'',linkedin:'',salary:'48000'},
+    {id:3,fn:'Lucas',ln:'Martin',email:'lmartin@dev.io',phone:'07 11 22 33 44',loc:'Bordeaux',exp:6,score:88,skills:['Node.js','PostgreSQL','Docker','Kubernetes'],stage:'interview',job:'Backend Senior',src:'LinkedIn',avail:'Préavis 1 mois',added:'12/03/2026',notes:'',linkedin:'',salary:'62000'},
+    {id:4,fn:'Thomas',ln:'Bernard',email:'t.bernard@pro.fr',phone:'',loc:'Paris',exp:4,score:87,skills:['Agile','Figma','SaaS','OKR'],stage:'interview',job:'Product Manager',src:'Recommandation',avail:'Préavis 3 mois',added:'08/03/2026',notes:'',linkedin:'',salary:'55000'},
+    {id:5,fn:'Chloé',ln:'Petit',email:'chloe@design.fr',phone:'',loc:'Nantes',exp:3,score:72,skills:['Figma','Prototypage','Sketch'],stage:'sourcing',job:'UX Designer',src:'Portfolio',avail:'Disponible',added:'16/03/2026',notes:'',linkedin:'',salary:'42000'},
+    {id:6,fn:'Hugo',ln:'Blanc',email:'h.blanc@pm.fr',phone:'',loc:'Paris',exp:5,score:81,skills:['SaaS B2B','OKR','Roadmap'],stage:'screening',job:'Product Manager',src:'LinkedIn',avail:'Préavis 1 mois',added:'13/03/2026',notes:'',linkedin:'',salary:'52000'},
+    {id:7,fn:'Sara',ln:'Morel',email:'sara@dev.fr',phone:'',loc:'Bordeaux',exp:5,score:83,skills:['Java','Spring','AWS','Microservices'],stage:'screening',job:'Backend Senior',src:'Indeed',avail:'Disponible',added:'11/03/2026',notes:'',linkedin:'',salary:'58000'},
+    {id:8,fn:'Nina',ln:'Jobert',email:'nina@data.fr',phone:'',loc:'Paris',exp:3,score:75,skills:['Python','SQL','Power BI'],stage:'sourcing',job:'Data Analyst Senior',src:'Indeed',avail:'Disponible',added:'15/03/2026',notes:'',linkedin:'',salary:'40000'},
+  ],
+  jobs:[
+    {id:1,title:'Lead Frontend Developer',dept:'Ingénierie',loc:'Paris',type:'CDI',mode:'Hybride',smin:55000,smax:70000,skills:'React, TypeScript, Next.js',desc:'Rejoignez notre équipe frontend pour piloter le développement de nos produits web.',exp:'Senior (5+ ans)',status:'active',added:'15/03/2026'},
+    {id:2,title:'Data Analyst Senior',dept:'Data',loc:'Lyon',type:'CDI',mode:'Hybride',smin:42000,smax:52000,skills:'Python, SQL, Tableau',desc:'Analysez nos données pour en extraire des insights stratégiques.',exp:'Confirmé (2–5 ans)',status:'active',added:'11/03/2026'},
+    {id:3,title:'Product Manager',dept:'Produit',loc:'Paris',type:'CDI',mode:'Présentiel',smin:50000,smax:65000,skills:'Agile, Figma, SaaS',desc:'Définissez et pilotez la roadmap produit.',exp:'Confirmé (2–5 ans)',status:'active',added:'13/03/2026'},
+    {id:4,title:'Backend Senior',dept:'Ingénierie',loc:'Remote',type:'CDI',mode:'Full remote',smin:55000,smax:68000,skills:'Node.js, PostgreSQL, Docker',desc:'Concevez et développez nos APIs.',exp:'Senior (5+ ans)',status:'active',added:'16/03/2026'},
+    {id:5,title:'DevOps Engineer',dept:'Infra',loc:'Paris',type:'CDI',mode:'Hybride',smin:55000,smax:75000,skills:'Docker, K8s, Terraform',desc:'Automatisez notre infrastructure cloud.',exp:'Senior (5+ ans)',status:'active',added:'17/03/2026'},
+    {id:6,title:'UX Designer',dept:'Design',loc:'Nantes',type:'CDI',mode:'Hybride',smin:40000,smax:50000,skills:'Figma, Prototypage',desc:'Créez des expériences utilisateur intuitives.',exp:'Confirmé (2–5 ans)',status:'active',added:'08/03/2026'},
+  ],
+  team:[
+    {id:1,fn:'Sophie',ln:'Laurent',role:'Directrice RH',perm:'Admin',hires:47,rating:4.8,email:'s.laurent@emt.fr',phone:'06 10 20 30 40'},
+    {id:2,fn:'Marc',ln:'Dupont',role:'Resp. Recrutement',perm:'Recruteur',hires:32,rating:4.6,email:'m.dupont@emt.fr',phone:'06 20 30 40 50'},
+    {id:3,fn:'Julie',ln:'Renard',role:'Chargée RH',perm:'Recruteur',hires:18,rating:4.7,email:'j.renard@emt.fr',phone:'06 30 40 50 60'},
+    {id:4,fn:'Paul',ln:'Besson',role:'Sourceur Senior',perm:'Sourceur',hires:5,rating:4.4,email:'p.besson@emt.fr',phone:'06 40 50 60 70'},
+  ],
+  interviews:[
+    {id:1,cand:'Marie Dubois',candId:1,job:'Lead Frontend Developer',type:'Entretien RH',date:'2026-03-25',time:'09:00',rec:'Sophie Laurent',status:'confirmed',link:'',notes:''},
+    {id:2,cand:'Lucas Martin',candId:3,job:'Backend Senior',type:'Entretien final',date:'2026-03-26',time:'14:00',rec:'Marc Dupont',status:'planned',link:'',notes:''},
+    {id:3,cand:'Thomas Bernard',candId:4,job:'Product Manager',type:'Test technique',date:'2026-03-27',time:'10:00',rec:'Julie Renard',status:'planned',link:'',notes:''},
+  ],
+  activity:[
+    {txt:'<strong>Amina Khoury</strong> a accepté l\'offre Data Analyst',time:'12 min',color:'#1a7a4a'},
+    {txt:'Entretien planifié avec <strong>Lucas Martin</strong>',time:'1h',color:'#1a4fd6'},
+    {txt:'5 CVs importés pour <strong>Lead Frontend</strong>',time:'2h',color:'#b85c00'},
+    {txt:'<strong>Chloé Petit</strong> a postulé à UX Designer',time:'3h',color:'#5b21b6'},
+  ]
+};
+
 function quickDemo(){
+  _companyId = null; _userId = null;
   DB.user.name='Sophie Laurent'; DB.user.email='sophie@emt-corp.fr';
   DB.user.company='EMT Corporation'; DB.user.role='Admin';
-  _companyId = null; // mode démo sans Supabase
+  // Charger les données démo
+  DB.candidates  = JSON.parse(JSON.stringify(DEMO_DATA.candidates));
+  DB.jobs        = JSON.parse(JSON.stringify(DEMO_DATA.jobs));
+  DB.team        = JSON.parse(JSON.stringify(DEMO_DATA.team));
+  DB.interviews  = JSON.parse(JSON.stringify(DEMO_DATA.interviews));
+  DB.activity    = JSON.parse(JSON.stringify(DEMO_DATA.activity));
   enterDash();
   showToast('Mode démo — données non sauvegardées', false);
 }
@@ -343,21 +389,25 @@ function enterDash(){
   G('sb-av-init').textContent=init;
   G('sb-uname').textContent=DB.user.name;
   G('sb-urole').textContent=DB.user.company+' · '+DB.user.role;
-  G('set-company').value=DB.user.company;
-  // Request notification permission
+  var _sc=G('set-company'); if(_sc) _sc.value=DB.user.company;
   if('Notification' in window && Notification.permission==='default'){ Notification.requestPermission(); }
   initChat();
   renderAll();
-  nav('dashboard', document.querySelector('.sb-item.active'));
-  // Welcome notification
-  setTimeout(function(){ pushNotif('Bienvenue '+(DB.user.name.split(' ')[0]||'')+'!','Votre tableau de bord est prêt. '+DB.candidates.length+' candidats · '+DB.jobs.filter(function(j){return j.status==='active';}).length+' postes actifs.','👋'); },500);
+  var _firstItem=document.querySelector('.sb-item');
+  nav('dashboard', _firstItem);
+  setTimeout(function(){
+    var _nb=DB.candidates.length>0
+      ? DB.candidates.length+' candidats · '+DB.jobs.filter(function(j){return j.status==='active';}).length+' postes actifs.'
+      : 'Votre espace est prêt. Commencez par créer une offre !';
+    pushNotif('Bienvenue '+(DB.user.name.split(' ')[0]||'')+'!',_nb,'👋');
+  },600);
 }
 
 function logout(){
-  _sb.auth.signOut();
-  _companyId = null; _userId = null;
-  // Réinitialiser les données
+  if(_userId) _sb.auth.signOut(); // Ne pas signOut en mode démo
+  _companyId=null; _userId=null;
   DB.candidates=[]; DB.jobs=[]; DB.interviews=[]; DB.team=[]; DB.activity=[];
+  DB.notifications=[]; _notifCount=0;
   G('dash-page').classList.remove('active');
   G('auth-page').style.display='flex';
   showA('ascreen-login');
@@ -927,13 +977,49 @@ function removeMember(id){
 function addTeamMember(){
   var fn=G('inv-fn').value.trim()||'Nouveau', ln=G('inv-ln').value.trim()||'Membre';
   var role=G('inv-role').value||'Recruteur';
-  DB.team.push({id:++DB.nextId,fn:fn,ln:ln,role:role,perm:role,hires:0,rating:0,email:G('inv-em').value||'',phone:''});
+  var email=(G('inv-em')&&G('inv-em').value.trim())||'';
+
+  // Ajouter localement d'abord
+  var newM={id:++DB.nextId,fn:fn,ln:ln,role:role,perm:role,hires:0,rating:0,email:email,phone:''};
+  DB.team.push(newM);
   addActivity('<strong>'+fn+' '+ln+'</strong> a rejoint l\'équipe comme '+role);
   closeM('m-invite');
   ['inv-fn','inv-ln','inv-em'].forEach(function(id){ var el=G(id); if(el) el.value=''; });
   renderAll();
-  showToast('✓ '+fn+' '+ln+' invité(e) !', true);
-  pushNotif('Nouveau membre',fn+' '+ln+' a rejoint l\'équipe comme '+role+'.','👥');
+
+  // Envoyer l'invitation par email via Edge Function si connecté
+  if(_companyId && email){
+    showToast('Envoi de l\'invitation à '+email+'…');
+    fetch('https://hgxemkbqjccrlzprpeec.supabase.co/functions/v1/invite-member', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + SUPA_KEY
+      },
+      body: JSON.stringify({
+        email: email,
+        role: role,
+        company_id: _companyId,
+        company_name: DB.user.company
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.error){
+        showToast('Erreur invitation : '+data.error, false);
+      } else {
+        showToast('✓ Invitation envoyée à '+email+' !', true);
+        pushNotif('Invitation envoyée', fn+' '+ln+' ('+email+') a été invité(e) comme '+role+'.','👥');
+      }
+    })
+    .catch(function(e){
+      showToast('✓ '+fn+' '+ln+' ajouté(e) localement', true);
+      pushNotif('Nouveau membre',fn+' '+ln+' a rejoint l\'équipe comme '+role+'.','👥');
+    });
+  } else {
+    showToast('✓ '+fn+' '+ln+' invité(e) !', true);
+    pushNotif('Nouveau membre',fn+' '+ln+' a rejoint l\'équipe comme '+role+'.','👥');
+  }
 }
 
 // ── SETTINGS ──
@@ -959,7 +1045,15 @@ var _chatI=0;
 function initChat(){
   var msgs=G('chatMsgs'); if(!msgs) return;
   msgs.innerHTML='';
-  appendMsg('ai','Bonjour <strong>'+DB.user.name.split(' ')[0]+'</strong> !<br><br>📊 <strong>'+DB.candidates.length+' candidats</strong> · <strong>'+DB.jobs.filter(function(j){return j.status==="active";}).length+' postes</strong> actifs<br>🎯 Meilleur profil : <strong>'+(DB.candidates.slice().sort(function(a,b){return b.score-a.score;})[0].fn)+' '+(DB.candidates.slice().sort(function(a,b){return b.score-a.score;})[0].ln)+'</strong> ('+DB.candidates.slice().sort(function(a,b){return b.score-a.score;})[0].score+'%)<br>📅 '+DB.interviews.filter(function(i){return i.status!=="done";}).length+" entretiens à venir<br><br>Posez-moi n'importe quelle question sur votre recrutement.");
+  var top=DB.candidates.length?DB.candidates.slice().sort(function(a,b){return b.score-a.score;})[0]:null;
+  var actJobs=DB.jobs.filter(function(j){return j.status==='active';}).length;
+  var ivs=DB.interviews.filter(function(i){return i.status!=='done';}).length;
+  var topTxt=top?'🎯 Meilleur profil : <strong>'+top.fn+' '+top.ln+'</strong> ('+top.score+'%)<br>':'';
+  appendMsg('ai','Bonjour <strong>'+DB.user.name.split(' ')[0]+'</strong> !<br><br>'
+    +'📊 <strong>'+DB.candidates.length+' candidats</strong> · <strong>'+actJobs+' postes</strong> actifs<br>'
+    +topTxt
+    +'📅 <strong>'+ivs+' entretien'+(ivs>1?'s':'')+' </strong>à venir<br><br>'
+    +"Posez-moi n'importe quelle question sur votre recrutement.");
 }
 
 function appendMsg(who,html){ var msgs=G('chatMsgs'); if(!msgs) return; var d=document.createElement('div'); d.className='msg '+who; d.innerHTML='<div class="msg-lbl">'+(who==='me'?'Vous':'EMT Recrut IA')+'</div><div class="msg-bubble">'+html+'</div>'; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; }
@@ -1112,41 +1206,41 @@ function gSearch(val){
 }
 
 window.addEventListener('load', function(){
-  // Vérifier session au démarrage
-  _sb.auth.getSession().then(function(res){
-    if(res.data && res.data.session){
-      var user=res.data.session.user;
-      _userId=user.id; DB.user.email=user.email;
-      var raw=user.email.split('@')[0];
-      DB.user.name=raw.split(/[._-]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
-      _sb.from('members').select('company_id, companies(name)').eq('user_id',_userId).single().then(function(r){
-        if(r.data){_companyId=r.data.company_id; DB.user.company=r.data.companies?r.data.companies.name:'Mon Entreprise';}
-        enterDash(); sbLoad();
-      });
-    }
+
+  // ── Initialiser Supabase (SDK chargé) ──
+  _sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  // ── Fermeture modales au clic extérieur ──
+  document.querySelectorAll('.overlay').forEach(function(o){
+    o.addEventListener('click', function(e){ if(e.target===o) o.classList.remove('open'); });
   });
-  // Vérifier si l'utilisateur est déjà connecté
-  _sb.auth.getSession().then(function(res){
-    if(res.data && res.data.session){
-      var user = res.data.session.user;
-      _userId = user.id;
-      DB.user.email = user.email;
-      var raw=user.email.split('@')[0];
-      DB.user.name=raw.split(/[.\-_]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
-      _sb.from('members').select('company_id, companies(name)').eq('user_id', _userId).single().then(function(r){
-        if(r.data){ _companyId=r.data.company_id; DB.user.company=r.data.companies?r.data.companies.name:'Mon Entreprise'; }
-        enterDash(); sbLoad();
-      });
-    }
-  });
-  document.querySelectorAll('.overlay').forEach(function(o){ o.addEventListener('click', function(e){ if(e.target===o) o.classList.remove('open'); }); });
-  // Setup file drop zone
-  var dropzone=G('cv-dropzone');
-  if(dropzone){
-    dropzone.addEventListener('dragover',function(e){ e.preventDefault(); dropzone.classList.add('drag-over'); });
-    dropzone.addEventListener('dragleave',function(){ dropzone.classList.remove('drag-over'); });
-    dropzone.addEventListener('drop',function(e){ e.preventDefault(); dropzone.classList.remove('drag-over'); handleCVFiles(e.dataTransfer.files); });
+
+  // ── Drag & drop CVs ──
+  var dz=G('cv-dropzone');
+  if(dz){
+    dz.addEventListener('dragover',function(e){ e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave',function(){ dz.classList.remove('drag-over'); });
+    dz.addEventListener('drop',function(e){ e.preventDefault(); dz.classList.remove('drag-over'); handleCVFiles(e.dataTransfer.files); });
   }
+
+  // ── Reconnexion automatique si session Supabase existante ──
+  _sb.auth.getSession().then(function(res){
+    if(!res.data || !res.data.session) return; // Pas de session → rester sur login
+    var user=res.data.session.user;
+    _userId=user.id;
+    DB.user.email=user.email;
+    var raw=user.email.split('@')[0];
+    DB.user.name=raw.split(/[._-]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+    _sb.from('members').select('company_id, companies(name)').eq('user_id',_userId).single().then(function(r){
+      if(r.data && r.data.company_id){
+        _companyId=r.data.company_id;
+        DB.user.company=r.data.companies?r.data.companies.name:'Mon Entreprise';
+      }
+      enterDash();
+      if(_companyId) sbLoad();
+    }).catch(function(e){ console.warn('Membre non trouvé:', e); });
+  }).catch(function(e){ console.warn('getSession error:', e); });
+
 });
 </script>
 
