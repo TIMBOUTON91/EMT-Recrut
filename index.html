@@ -62,15 +62,20 @@ async function sbLoad(){
 }
 
 async function sbSaveCandidate(c){
+  if(!_companyId){ console.error('sbSaveCandidate: _companyId est null !'); showToast('⚠ Erreur: entreprise non connectée'); return; }
+  if(!_sb){ console.error('sbSaveCandidate: _sb est null !'); return; }
   var data = { company_id:_companyId, fn:c.fn, ln:c.ln, email:c.email, phone:c.phone||'',
     loc:c.loc, exp:c.exp, score:c.score, skills:c.skills, stage:c.stage,
     job:c.job, src:c.src, avail:c.avail, notes:c.notes, linkedin:c.linkedin||'',
     salary:c.salary||'', added:c.added };
-  if(typeof c.id === 'number'){ // nouvel id local
+  console.log('Saving candidate to Supabase:', c.fn, c.ln, 'company:', _companyId);
+  if(typeof c.id === 'number'){
     var r = await _sb.from('candidates').insert(data).select().single();
-    if(r.data) c.id = r.data.id;
+    if(r.error){ console.error('Insert error:', r.error); showToast('⚠ Erreur sauvegarde: '+r.error.message); return; }
+    if(r.data){ c.id = r.data.id; console.log('Saved with id:', c.id); }
   } else {
-    await _sb.from('candidates').update(data).eq('id', c.id);
+    var r2 = await _sb.from('candidates').update(data).eq('id', c.id);
+    if(r2.error) console.error('Update error:', r2.error);
   }
 }
 
@@ -248,12 +253,16 @@ function doLogin(){
     DB.user.name=raw.split(/[.\-_]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
     // Charger l'entreprise du user
     _sb.from('members').select('company_id, companies(name)').eq('user_id', _userId).single().then(function(r){
-      if(r.data){
+      if(r.data && r.data.company_id){
         _companyId = r.data.company_id;
         DB.user.company = r.data.companies ? r.data.companies.name : 'Mon Entreprise';
+        console.log('Company ID chargé:', _companyId);
+      } else {
+        console.error('Pas de company_id dans members pour cet utilisateur !', r);
+        showToast('⚠ Compte non configuré — contactez le support');
       }
       enterDash();
-      sbLoad();
+      if(_companyId) sbLoad();
     });
   });
 }
