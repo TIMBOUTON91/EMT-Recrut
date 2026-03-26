@@ -948,8 +948,29 @@ function exportCSV(){
 }
 
 window.addEventListener('load',function(){
-  // Initialiser Supabase après chargement SDK
-  SB=supabase.createClient(SUPA_URL,SUPA_KEY);
+  // Initialiser Supabase avec persistance de session
+  SB=supabase.createClient(SUPA_URL,SUPA_KEY,{
+    auth:{
+      persistSession:true,
+      autoRefreshToken:true,
+      detectSessionInUrl:true,
+      storage:window.localStorage
+    }
+  });
+
+  // Écouter les changements d'authentification (plus fiable que getSession)
+  SB.auth.onAuthStateChange(function(event,session){
+    if(event==='SIGNED_IN'&&session&&!G('dash-page').classList.contains('active')){
+      UID=session.user.id;
+      DB.user.email=session.user.email;
+      var raw=session.user.email.split('@')[0];
+      DB.user.name=raw.split(/[._\-]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
+      loadCompany();
+    }
+    if(event==='SIGNED_OUT'&&G('dash-page').classList.contains('active')){
+      logout();
+    }
+  });
 
   // Détecter token d'invitation dans l'URL (#access_token=...)
   var hash=window.location.hash;
@@ -971,15 +992,7 @@ window.addEventListener('load',function(){
     }
   }
 
-  // Reconnexion automatique si session existante
-  SB.auth.getSession().then(function(res){
-    if(!res.data||!res.data.session)return;
-    var user=res.data.session.user;
-    UID=user.id; DB.user.email=user.email;
-    var raw=user.email.split('@')[0];
-    DB.user.name=raw.split(/[._\-]/).map(function(p){return p.charAt(0).toUpperCase()+p.slice(1);}).join(' ');
-    loadCompany();
-  }).catch(function(e){console.warn('getSession error:',e);});
+  // Session gérée par onAuthStateChange ci-dessus
 
   // Modales — fermer au clic extérieur
   document.querySelectorAll('.overlay').forEach(function(o){
