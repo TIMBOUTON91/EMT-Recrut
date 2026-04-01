@@ -69,30 +69,38 @@ async function sbLoad(){
   }catch(e){ console.error('sbLoad error:',e); showToast('Erreur chargement données'); }
 }
 
-// ── Sauvegarder candidat ──
+// ── Sauvegarder candidat ── (BUG CORRIGÉ v3)
 async function sbSaveCand(c){
   if(!CID||!SB){ showToast('⚠ Non connecté à Supabase'); return; }
   var data={company_id:CID,fn:c.fn,ln:c.ln,email:c.email,phone:c.phone||'',loc:c.loc||'France',exp:c.exp||0,score:c.score||0,skills:c.skills||[],stage:c.stage||'sourcing',job:c.job||'',src:c.src||'Autre',avail:c.avail||'À confirmer',notes:c.notes||'',linkedin:c.linkedin||'',salary:c.salary||'',added:c.added||today(),cv_url:c.cv_url||''};
+  // ✅ CORRIGÉ : id de type number = ID local temporaire = nouveau candidat = INSERT
+  // id de type string = UUID Supabase = candidat existant = UPDATE
   if(typeof c.id==='number'){
+    // Nouveau candidat : on INSERT dans Supabase
     var r=await SB.from('candidates').insert(data).select().single();
-    if(r.error){ showToast('⚠ Erreur: '+r.error.message); return; }
-    if(r.data) c.id=r.data.id;
+    if(r.error){ showToast('⚠ Erreur sauvegarde: '+r.error.message); console.error('sbSaveCand INSERT error:',r.error); return; }
+    if(r.data){ c.id=r.data.id; } // On remplace l'ID local par l'UUID Supabase ✓
   } else {
+    // Candidat existant (UUID string) : on UPDATE
     var r2=await SB.from('candidates').update(data).eq('id',c.id);
-    if(r2.error) showToast('⚠ Erreur mise à jour: '+r2.error.message);
+    if(r2.error){ showToast('⚠ Erreur mise à jour: '+r2.error.message); console.error('sbSaveCand UPDATE error:',r2.error); }
   }
 }
 
-// ── Sauvegarder offre ──
+// ── Sauvegarder offre ── (BUG CORRIGÉ v3)
 async function sbSaveJob(j){
   if(!CID||!SB) return;
   var data={company_id:CID,title:j.title,dept:j.dept||'',loc:j.loc||'',type:j.type||'CDI',mode:j.mode||'Hybride',smin:j.smin||0,smax:j.smax||0,exp:j.exp||'',skills:j.skills||'',description:j.desc||'',status:j.status||'active',added:j.added||today()};
+  // ✅ CORRIGÉ : même logique que sbSaveCand
   if(typeof j.id==='number'){
+    // Nouvelle offre : INSERT
     var r=await SB.from('jobs').insert(data).select().single();
-    if(r.error){ showToast('⚠ Erreur: '+r.error.message); return; }
-    if(r.data) j.id=r.data.id;
+    if(r.error){ showToast('⚠ Erreur offre: '+r.error.message); console.error('sbSaveJob INSERT error:',r.error); return; }
+    if(r.data){ j.id=r.data.id; }
   } else {
-    await SB.from('jobs').update(data).eq('id',j.id);
+    // Offre existante : UPDATE
+    var r2=await SB.from('jobs').update(data).eq('id',j.id);
+    if(r2.error){ console.error('sbSaveJob UPDATE error:',r2.error); }
   }
 }
 
@@ -109,10 +117,12 @@ async function sbSaveIV(iv){
   }
 }
 
-// ── Patcher un champ candidat ──
+// ── Patcher un champ candidat ── (BUG CORRIGÉ v3)
 async function sbPatchCand(id,patch){
+  // ✅ CORRIGÉ : on patche si l'id est un UUID (string), on ignore si c'est encore un ID local (number)
   if(!CID||!SB||typeof id==='number') return;
-  await SB.from('candidates').update(patch).eq('id',id);
+  var r=await SB.from('candidates').update(patch).eq('id',id);
+  if(r.error) console.error('sbPatchCand error:',r.error);
 }
 
 // ── Ajouter activité ──
@@ -551,7 +561,7 @@ function openDrawer(id){
   var cvLink=G('d-cv-link');
   if(cvLink)cvLink.style.display=c.cv_url?'inline-flex':'none';
   if(cvLink&&c.cv_url)cvLink.href=c.cv_url;
-  G('d-aitext').textContent='Score IA : '+c.score+'% — '+c.exp+' ans d\'expérience · '+c.skills.join(', ')+'.';
+  G('d-aitext').textContent='Score IA : '+c.score+'% — '+c.exp+' ans d\'expérience · '+c.skills.join(', ')+'. '+(c.score>=80?'🟢 Excellent profil — shortlist recommandée.':c.score>=60?'🟡 Profil intéressant — à approfondir.':'🔴 Correspondance partielle avec le poste.');
   var stage=c.stage;
   G('d-move-back').style.display=STAGE_ORDER.indexOf(stage)>0?'inline-flex':'none';
   G('d-move-fwd').style.display=STAGE_ORDER.indexOf(stage)<STAGE_ORDER.length-1?'inline-flex':'none';
@@ -631,21 +641,105 @@ function addCandidate(){
 }
 
 function analyzeSkills(skills,jobTitle,jobSkills){
-  var s=30;
+  // ════ SCORING IA AMÉLIORÉ v3 ════
+  // Score sur 100 points avec 4 critères pondérés
+  var score=0;
   var jl=(jobTitle||'').toLowerCase();
   var js=(jobSkills||'').toLowerCase();
+  var jobWords=(jl+' '+js).split(/[\s,;]+/).filter(function(w){return w.length>2;});
+
+  // CRITÈRE 1 — Correspondance directe avec le poste (40 pts max)
+  var matchScore=0;
+  if(jobWords.length>0){
+    skills.forEach(function(sk){
+      var skl=sk.toLowerCase();
+      jobWords.forEach(function(w){
+        if(skl.indexOf(w)>=0||w.indexOf(skl)>=0) matchScore+=7;
+      });
+    });
+    matchScore=Math.min(matchScore,40);
+  } else {
+    matchScore=15; // Score neutre si pas de poste sélectionné
+  }
+  score+=matchScore;
+
+  // CRITÈRE 2 — Valeur des compétences reconnues dans la base (35 pts max)
+  var techScore=0;
   skills.forEach(function(sk){
     var skl=sk.toLowerCase();
-    if(jl.indexOf(skl)>=0||js.indexOf(skl)>=0) s+=8;
-    else s+=2;
-  });
-  // Bonus technologies reconnues
-  Object.keys(KW).forEach(function(cat){
-    KW[cat].k.forEach(function(kw){
-      skills.forEach(function(sk){if(sk.toLowerCase()===kw) s+=KW[cat].p/2;});
+    Object.keys(KW).forEach(function(cat){
+      KW[cat].k.forEach(function(kw){
+        if(skl===kw||skl.indexOf(kw)>=0){
+          techScore+=KW[cat].p*0.5;
+        }
+      });
     });
   });
-  return Math.max(20,Math.min(99,Math.round(s)));
+  techScore=Math.min(techScore,35);
+  score+=techScore;
+
+  // CRITÈRE 3 — Nombre de compétences (richesse du profil) (15 pts max)
+  var richScore=Math.min(skills.length*2,15);
+  score+=richScore;
+
+  // CRITÈRE 4 — Malus si profil vide
+  if(skills.length===0) score=Math.max(score-20,10);
+
+  // Score final normalisé entre 15 et 97
+  return Math.max(15,Math.min(97,Math.round(score)));
+}
+
+// ════ SYSTÈME D'EMAILS AUTOMATIQUES v3 ════
+// Règles : score < 60 → refus immédiat | 60-80 → analyse (J+2) | > 80 → shortlist immédiat
+var EMAIL_TEMPLATES={
+  rejected:function(fn,poste){return {
+    subject:'Votre candidature — '+DB.user.company,
+    body:'Bonjour '+fn+',\n\nNous vous remercions de l\'intérêt que vous portez à notre entreprise et du temps consacré à votre candidature pour le poste de '+poste+'.\n\nAprès examen attentif de votre dossier, nous ne sommes pas en mesure de donner une suite favorable à votre candidature. Cette décision tient à des critères spécifiques à notre recherche actuelle et ne remet pas en question la valeur de votre profil.\n\nNous conservons votre dossier et n\'hésiterons pas à vous recontacter si une opportunité correspondant à vos compétences se présente.\n\nCordialement,\nL\'équipe RH — '+DB.user.company
+  };},
+  review:function(fn,poste){return {
+    subject:'Votre candidature est en cours d\'analyse — '+DB.user.company,
+    body:'Bonjour '+fn+',\n\nNous avons bien reçu votre candidature pour le poste de '+poste+' et nous vous en remercions.\n\nVotre dossier est actuellement en cours d\'analyse approfondie par notre équipe de recrutement. Nous revenons vers vous dans les meilleurs délais pour vous informer de la suite donnée.\n\nCordialement,\nL\'équipe RH — '+DB.user.company
+  };},
+  shortlist:function(fn,poste){return {
+    subject:'Votre profil retient notre attention — '+DB.user.company,
+    body:'Bonjour '+fn+',\n\nNous avons étudié votre candidature pour le poste de '+poste+' avec beaucoup d\'intérêt. Votre profil correspond tout à fait à ce que nous recherchons.\n\nUn membre de notre équipe vous contactera prochainement afin d\'échanger sur votre parcours et de vous présenter le poste plus en détail. Nous vous remercions de votre intérêt pour notre entreprise et espérons avoir la chance de vous rencontrer bientôt.\n\nCordialement,\nL\'équipe RH — '+DB.user.company
+  };}
+};
+
+async function scheduleEmail(candidate){
+  if(!SB||!CID||!candidate.email) return;
+  var emailType='';
+  var sendAt=new Date();
+  if(candidate.score<60){
+    emailType='rejected';
+    // Envoi immédiat
+  } else if(candidate.score>=60&&candidate.score<=80){
+    emailType='review';
+    sendAt.setDate(sendAt.getDate()+2); // +2 jours
+  } else {
+    emailType='shortlist';
+    // Envoi immédiat
+  }
+  // On stocke dans la table email_queue de Supabase
+  // La table sera traitée par une Edge Function + Cron Job
+  try{
+    await SB.from('email_queue').insert({
+      company_id:CID,
+      candidate_id:(typeof candidate.id==='string'?candidate.id:null),
+      email:candidate.email,
+      candidate_name:candidate.fn,
+      poste:candidate.job||'Non spécifié',
+      score:candidate.score,
+      email_type:emailType,
+      status:'pending',
+      send_at:sendAt.toISOString()
+    });
+    // Log dans l'activité
+    var labels={rejected:'Email refus programmé',review:'Email "en cours d\'analyse" programmé (J+2)',shortlist:'Email shortlist programmé'};
+    addAct(labels[emailType]+' pour <strong>'+candidate.fn+' '+candidate.ln+'</strong>','#6366f1');
+  }catch(e){
+    console.log('email_queue non disponible (table à créer dans Supabase):',e.message);
+  }
 }
 
 function uploadCV(file,cand,callback){
@@ -666,10 +760,15 @@ function finishAddCand(c){
   var cj=G('cn-job'); if(cj)cj.selectedIndex=0;
   var cf=G('cn-cv-file'); if(cf)cf.value='';
   renderAll();
-  sbSaveCand(c);
+  // ✅ v3 : sbSaveCand d'abord, puis email automatique après que l'ID Supabase est connu
+  sbSaveCand(c).then(function(){
+    scheduleEmail(c); // Email automatique selon le score IA
+  });
   sbActivity('Nouveau candidat : '+c.fn+' '+c.ln);
   pushNotif('Nouveau candidat',c.fn+' '+c.ln+' ('+c.score+'% de compatibilité).','👤');
-  showToast('✓ '+c.fn+' '+c.ln+' ajouté ! Score IA : '+c.score+'%',true);
+  // Message avec explication du score
+  var scoreMsg=c.score>=80?'🟢 Excellent profil — email shortlist programmé':c.score>=60?'🟡 Bon profil — email "en analyse" dans 2 jours':'🔴 Profil partiel — email refus programmé';
+  showToast('✓ '+c.fn+' ajouté ! Score : '+c.score+'% · '+scoreMsg,true);
   nav('candidates',null);
 }
 
@@ -695,7 +794,11 @@ function handleCVFiles(files){
         var best=results.slice().sort(function(a,b){return b.score-a.score;})[0];
         var avg=Math.round(results.reduce(function(s,c){return s+c.score;},0)/results.length);
         addAct(total+' CV'+(total>1?'s':'')+' importés · Meilleur: <strong>'+best.fn+' '+best.ln+'</strong> ('+best.score+'%)','#b85c00');
-        results.forEach(function(c){sbSaveCand(c);});
+        // ✅ v3 : sauvegarde correcte + email automatique pour chaque CV
+        var savePromises=results.map(function(c){return sbSaveCand(c);});
+        Promise.all(savePromises).then(function(){
+          results.forEach(function(c){ scheduleEmail(c); });
+        });
         sbActivity(total+' CVs importés pour '+job);
         closeM('m-import'); renderAll();
         pushNotif('CVs importés',total+' profils analysés pour '+job+'. Moy: '+avg+'%.','📁');
@@ -883,6 +986,44 @@ function saveIntegCfg(){
   if(ig.url||ig.key)ig.connected=true;
   closeM('m-integ-cfg'); renderIntegrations();
   showToast(ig.name+' configuré !',true);
+}
+
+// ════ IMPORT RSS — Offres depuis Indeed, Hellowork, etc. ════
+async function importFromRSS(){
+  var url=G('rss-url')&&G('rss-url').value.trim();
+  if(!url){showToast('⚠ Entrez une URL RSS valide');return;}
+  showToast('⏳ Import RSS en cours…');
+  try{
+    // On utilise allorigins.win comme proxy CORS gratuit
+    var proxy='https://api.allorigins.win/get?url='+encodeURIComponent(url);
+    var res=await fetch(proxy);
+    var data=await res.json();
+    if(!data.contents){showToast('⚠ Impossible de lire ce flux RSS');return;}
+    var parser=new DOMParser();
+    var xml=parser.parseFromString(data.contents,'text/xml');
+    var items=xml.querySelectorAll('item');
+    if(!items.length){showToast('⚠ Aucune offre trouvée dans ce flux');return;}
+    var added=0;
+    items.forEach(function(item){
+      var title=(item.querySelector('title')?.textContent||'Sans titre').trim();
+      var desc=(item.querySelector('description')?.textContent||'').replace(/<[^>]+>/g,' ').trim();
+      var link=item.querySelector('link')?.textContent||'';
+      // Éviter les doublons
+      var exists=DB.jobs.find(function(j){return j.title===title;});
+      if(!exists){
+        var nj={id:++DB.nextId,title:title,dept:'Import RSS',loc:'',type:'CDI',mode:'À préciser',smin:0,smax:0,exp:'',skills:'',desc:desc.slice(0,500)+(link?'\n\nSource: '+link:''),status:'active',added:today()};
+        DB.jobs.push(nj);
+        sbSaveJob(nj);
+        added++;
+      }
+    });
+    renderAll();
+    showToast('✓ '+added+' offre'+(added>1?'s':'')+' importée'+(added>1?'s':'')+' depuis RSS',true);
+    addAct(added+' offres importées via RSS','#1a7a4a');
+  }catch(e){
+    showToast('⚠ Erreur import RSS: '+e.message);
+    console.error('importFromRSS error:',e);
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -1391,6 +1532,11 @@ window.addEventListener('load',function(){
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:monospace;font-size:12.5px;word-break:break-all;margin-bottom:8px" id="webhook-url">https://hgxemkbqjccrlzprpeec.supabase.co/functions/v1/receive-candidature</div>
             <button type="button" class="btn btn-s btn-sm" onclick="navigator.clipboard.writeText(G('webhook-url').textContent);showToast('URL copiée !',true)">📋 Copier l'URL</button>
             <div style="font-size:12px;color:var(--ink3);margin-top:8px">Indeed, Hellowork et la plupart des jobboards supportent les webhooks dans leurs paramètres employeur.</div>
+          </div>
+          <div class="set-section"><div class="set-section-title">📥 Import offres RSS (Indeed, Hellowork…)</div>
+            <div style="font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:12px">Importez automatiquement des offres depuis un flux RSS Indeed ou autre jobboard :</div>
+            <div class="fr2" style="margin-bottom:10px"><div class="fgp"><label class="flbl">URL du flux RSS</label><input type="text" class="fctrl" id="rss-url" placeholder="https://fr.indeed.com/rss?q=développeur&l=Paris"/></div><div class="fgp" style="display:flex;align-items:flex-end"><button type="button" class="btn btn-p btn-sm" style="height:36px;width:100%" onclick="importFromRSS()">📥 Importer</button></div></div>
+            <div style="font-size:11.5px;color:var(--ink3)">💡 Exemple RSS Indeed : <code>https://fr.indeed.com/rss?q=développeur&l=Paris&sort=date</code></div>
           </div>
         </div>
         <div id="s-notif" style="display:none">
